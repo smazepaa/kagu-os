@@ -70,7 +70,7 @@ function cpu_execute {
             write_to_address ${GLOBAL_COMPARE_RES_ADDRESS} ${CPU_REGISTER_OUT}
             return 0
             ;;
-         "${CPU_LESS_THAN_EQUAL_CMD}")
+        "${CPU_LESS_THAN_EQUAL_CMD}")
             if [ "${CPU_REGISTER1}" -le "${CPU_REGISTER2}" ]; then
                 CPU_REGISTER_OUT="1"
             else
@@ -123,10 +123,18 @@ function cpu_execute {
             return 0
             ;;
         "${CPU_ENCRYPT_CMD}")
-            CPU_REGISTER_OUT="${CPU_REGISTER1}"
+            # Part A: 2 random symbols at the beginning and end
+            local rand_prefix=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
+            local rand_suffix=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
+            # Part B: character replacement
+            local encrypted=$(echo "${CPU_REGISTER1}" | tr 'aouyeiAOUYEI' 'oayueiOAYUEI')
+            CPU_REGISTER_OUT="${rand_prefix}${encrypted}${rand_suffix}"
             ;;
         "${CPU_DECRYPT_CMD}")
-            CPU_REGISTER_OUT="${CPU_REGISTER1}"
+            # remove the 2 random symbols at the beginning and end
+            local trimmed=${CPU_REGISTER1:2:-2}
+            # character replacement back
+            CPU_REGISTER_OUT=$(echo "${trimmed}" | tr 'oayueiOAYUEI' 'aouyeiAOUYEI')
             ;;
         *)
             exit_fatal "Unknown cpu instruction: ${CPU_REGISTER_CMD}"
