@@ -287,11 +287,15 @@ FUNC:file_read
     read_device_buffer ${VAR_file_read_disk_name_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS}
     *VAR_file_read_temp_var_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
-    *GLOBAL_OUTPUT_ADDRESS=*VAR_file_read_temp_var_ADDRESS
+    # decrypt the file
+    cpu_execute "${CPU_DECRYPT_CMD}" ${VAR_file_read_temp_var_ADDRESS}
+    *GLOBAL_OUTPUT_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
     func_return
-  LABEL:file_read_not_found
-    *GLOBAL_OUTPUT_ADDRESS="-1"
-    func_return
+
+    LABEL:file_read_not_found
+        *GLOBAL_OUTPUT_ADDRESS="-1"
+        func_return
 
 # function writes one line to the file with provided file descriptor
 # INPUT: file descriptor, address with line that should be added to file
