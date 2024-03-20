@@ -300,6 +300,7 @@ FUNC:file_write
     var file_write_disk_name
     var file_write_info
     var file_write_temp_var
+    var line_number
 
     call_func file_info ${GLOBAL_ARG1_ADDRESS}
     *VAR_file_write_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
@@ -313,15 +314,25 @@ FUNC:file_write
     cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} ${VAR_file_write_temp_var_ADDRESS}
     jump_if ${LABEL_file_write_not_found}
 
-    write_device_buffer ${VAR_file_write_disk_name_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS} ${GLOBAL_ARG2_ADDRESS}
+    # extract line number and store it in a separate variable
+    # echo "DEBUG: Global output address value: ${GLOBAL_OUTPUT_ADDRESS}"
+    *VAR_line_number_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    # echo "DEBUG: Line number value: ${VAR_line_number_ADDRESS}"
+
+    # encrypt the file
+    *VAR_file_write_temp_var_ADDRESS=*GLOBAL_ARG2_ADDRESS
+    cpu_execute "${CPU_ENCRYPT_CMD}" ${VAR_file_write_temp_var_ADDRESS}
+
+    # write the encrypted line to the file
+    write_device_buffer ${VAR_file_write_disk_name_ADDRESS} ${VAR_line_number_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS}
     *VAR_file_write_temp_var_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
     *GLOBAL_OUTPUT_ADDRESS=*VAR_file_write_temp_var_ADDRESS
     func_return
 
-  LABEL:file_write_not_found
-    *GLOBAL_OUTPUT_ADDRESS="-1"
-    func_return
+    LABEL:file_write_not_found
+        *GLOBAL_OUTPUT_ADDRESS="-1"
+        func_return
 
 # function sets cursor to file descriptor
 FUNC:file_set_cursor
