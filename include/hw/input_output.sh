@@ -78,14 +78,14 @@ function display_error {
 function encrypt {
     local rand_prefix=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
     local rand_suffix=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
-    local encrypted=$(echo "${1}" | tr 'aouyeiAOUYEI' 'oayueiOAYUEI')
+    local encrypted=$(echo "${1}" | tr 'aouyieAOUYEI' 'oayueiOAYUIE')
     echo "${rand_prefix}${encrypted}${rand_suffix}"
 }
 
 
 function decrypt {
     local trimmed=${1:2:-2}
-    local decrypted=$(echo "${trimmed}" | tr 'oayueiOAYUEI' 'aouyeiAOUYEI')
+    local decrypted=$(echo "${trimmed}" | tr 'oayueiOAYUEI' 'aouyieAOUYIE')
     echo "${decrypted}"
 }
 

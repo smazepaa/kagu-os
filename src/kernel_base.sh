@@ -83,6 +83,11 @@ call_func_if system_touch ${VAR_original_input_arg1_ADDRESS} ${VAR_original_inpu
 cpu_execute "${CPU_EQUAL_CMD}" ${VAR_original_input_cmd_ADDRESS} ${GLOBAL_ARG1_ADDRESS}
 call_func_if system_pwd
 
+# check for rm command:
+*GLOBAL_ARG1_ADDRESS="rm"
+cpu_execute "${CPU_EQUAL_CMD}" ${VAR_original_input_cmd_ADDRESS} ${GLOBAL_ARG1_ADDRESS}
+call_func_if system_rm ${VAR_original_input_arg1_ADDRESS}
+
 var main_loop_temp_var
 *VAR_main_loop_temp_var_ADDRESS="0"
 cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} ${VAR_main_loop_temp_var_ADDRESS}
@@ -206,6 +211,43 @@ FUNC:system_touch
     display_error
     *GLOBAL_OUTPUT_ADDRESS="1"
     func_return
+
+FUNC:system_rm
+    var system_rm_temp_var
+    var system_rm_file_descriptor
+    var system_rm_result
+    var initial_filename
+
+    # Check if the path is not absolute, then concatenate it with the working directory:
+    *VAR_system_rm_temp_var_ADDRESS="/"
+    *VAR_initial_filename_ADDRESS=*GLOBAL_ARG1_ADDRESS
+    cpu_execute "${CPU_STARTS_WITH_CMD}" ${GLOBAL_ARG1_ADDRESS} ${VAR_system_rm_temp_var_ADDRESS}
+    jump_if ${LABEL_system_rm_remove_file}
+    cpu_execute "${CPU_CONCAT_CMD}" ${GLOBAL_WORKING_DIR_ADDRESS} ${GLOBAL_ARG1_ADDRESS}
+    *GLOBAL_ARG1_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+  LABEL:system_rm_remove_file
+      # Call function to remove the file and check the result:
+      call_func remove_file ${GLOBAL_ARG1_ADDRESS} ${VAR_initial_filename_ADDRESS}
+      *VAR_system_rm_result_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+      *VAR_system_rm_temp_var_ADDRESS="-1"
+      cpu_execute "${CPU_EQUAL_CMD}" ${VAR_system_rm_result_ADDRESS} ${VAR_system_rm_temp_var_ADDRESS}
+      jump_if ${LABEL_system_rm_error}
+
+      # If the file was successfully removed:
+      *GLOBAL_DISPLAY_ADDRESS="File removed successfully."
+      display_success
+      *GLOBAL_OUTPUT_ADDRESS="0"
+      func_return
+
+  LABEL:system_rm_error
+      # If there was an error removing the file:
+      *GLOBAL_DISPLAY_ADDRESS="Error removing file."
+      display_error
+      *GLOBAL_OUTPUT_ADDRESS="1"
+      func_return
+
 ##########################################
 # KERNEL_END                             #
 ##########################################

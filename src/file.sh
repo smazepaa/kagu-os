@@ -548,3 +548,234 @@ FUNC:file_create
     LABEL:file_create_error
         *GLOBAL_OUTPUT_ADDRESS="-1"
         func_return
+
+# Remove a file
+# INPUT: file path
+# OUTPUT: 0 on success, -1 otherwise
+FUNC:remove_file
+    var remove_file_disk_info
+    var remove_file_disk_name
+    var remove_file_partition_name
+    var remove_file_partition_header_line
+    var remove_file_file_line
+    var remove_file_start_index
+    var remove_file_end_index
+    var remove_file_counter
+    var remove_file_temp_var
+    var remove_file_partition_info
+    var remove_file_new_free_start
+    var file_remove_partition_start
+    var file_remove_partition_end
+    var remove_file_found
+    var remove_file_cur_line
+    var file_remove_line_for_header
+    var remove_file_file_found
+
+    # Step 1: Find the disk, partition, and file entry
+    call_func file_found_disk ${GLOBAL_ARG1_ADDRESS}
+    *VAR_remove_file_disk_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} "-1"
+    jump_if ${LABEL_remove_file_error}
+
+    # Step 2: Extract disk and partition information
+    *VAR_remove_file_temp_var_ADDRESS="1"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_disk_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_remove_file_disk_name_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_remove_file_temp_var_ADDRESS="2"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_disk_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_remove_file_partition_name_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_remove_file_temp_var_ADDRESS="3"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_disk_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_remove_file_partition_header_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    echo "partition header line: ${VAR_remove_file_partition_header_line_ADDRESS}"
+
+    # Step 3: Read partition header to get current free range
+    read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_partition_header_line_ADDRESS}
+    *VAR_remove_file_partition_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    # Step 4: Locate and read the file entry line, then remove it
+
+    # Parse partition info:
+    *VAR_remove_file_temp_var_ADDRESS="4"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_file_remove_partition_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_remove_file_temp_var_ADDRESS="5"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_file_remove_partition_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    # check whether file exists:
+    *VAR_remove_file_counter_ADDRESS=*VAR_file_remove_partition_start_ADDRESS
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_counter_ADDRESS
+    display_success
+    *VAR_remove_file_file_found_ADDRESS="0"
+
+    # Searching for the file within the partition
+    LABEL:remove_file_search_loop
+        read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_counter_ADDRESS}
+        *VAR_remove_file_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        *GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_cur_line_ADDRESS
+        display_success
+
+        # Check for DUMMY_FS_END marker
+        *VAR_remove_file_temp_var_ADDRESS="DUMMY_FS_END"
+        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_remove_file_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+        jump_if ${LABEL_dummy_fs_end_found}
+
+        # Check if current line contains the filename
+
+        *VAR_remove_file_temp_var_ADDRESS="1"
+         cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+        *VAR_remove_file_temp_var_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        echo "VAR_remove_file_temp_var_ADDRESS"
+        *GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_temp_var_ADDRESS
+        display_success
+
+        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_initial_filename_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS} 
+        *GLOBAL_DISPLAY_ADDRESS=*GLOBAL_COMPARE_RES_ADDRESS
+        display_success
+        jump_if ${LABEL_file_found}
+
+        # Increment the counter and continue the search
+        *VAR_remove_file_counter_ADDRESS++
+        jump_to ${LABEL_remove_file_search_loop}
+
+    LABEL:file_found
+        echo "File found, proceeding with deletion."
+
+        # start of file
+        *VAR_remove_file_start_index_ADDRESS="8"
+        cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_cur_line_ADDRESS} ${VAR_remove_file_start_index_ADDRESS}
+        *VAR_remove_file_start_index_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+        #end of file
+        *VAR_remove_file_end_index_ADDRESS="9"
+        cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_cur_line_ADDRESS} ${VAR_remove_file_end_index_ADDRESS}
+        *VAR_remove_file_end_index_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+        jump_to ${LABEL_file_remove_loop}
+
+    LABEL:file_remove_loop
+        echo "file remove loop"
+        *VAR_remove_file_counter_ADDRESS=*VAR_remove_file_start_index_ADDRESS
+        read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_counter_ADDRESS}
+        *VAR_remove_file_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+        *VAR_remove_file_temp_var_ADDRESS=""
+        write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+        echo "line cleared"
+
+        # check for file end
+        *VAR_remove_file_temp_var_ADDRESS=*VAR_remove_file_end_index_ADDRESS
+        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_remove_file_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+        jump_if ${LABEL_file_end_found}
+
+        # Increment the counter and continue the search
+        *VAR_remove_file_counter_ADDRESS++
+
+        jump_to ${LABEL_file_remove_loop}
+
+    *GLOBAL_OUTPUT_ADDRESS="0"
+    func_return
+
+LABEL:file_end_found
+    echo "file end found"
+
+    # update the free range in the partition header
+    var file_size
+    cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_remove_file_end_index_ADDRESS} ${VAR_remove_file_start_index_ADDRESS}
+    *GLOBAL_OUTPUT_ADDRESS++
+    *VAR_file_size_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    jump_to ${LABEL_file_remove_defrag}
+
+    #func_return
+
+LABEL:remove_file_error
+    echo "Error: Unable to locate the disk or partition."
+    *GLOBAL_OUTPUT_ADDRESS="-1"
+    func_return
+
+LABEL:dummy_fs_end_found
+    # If reached here without finding the file, it doesn't exist
+    echo "File not found in the filesystem."
+    *GLOBAL_OUTPUT_ADDRESS="-1"
+    func_return
+
+LABEL:file_remove_defrag
+    # Defragmentation logic starts here
+    echo "Starting defragmentation process..."
+
+    var defrag_counter
+    var target_line
+    # Start moving files up to fill the gap
+    *VAR_defrag_counter_ADDRESS=*VAR_remove_file_end_index_ADDRESS
+    *VAR_defrag_counter_ADDRESS++
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_defrag_counter_ADDRESS
+    display_success
+    *VAR_target_line_ADDRESS=*VAR_remove_file_start_index_ADDRESS
+    echo "target line:" ${VAR_target_line_ADDRESS}
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_target_line_ADDRESS
+    display_success
+    jump_to ${LABEL_defrag_loop}
+
+
+LABEL:defrag_loop
+    echo "defrag loop"
+    var defrag_cur_line
+    read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_defrag_counter_ADDRESS}
+    *VAR_defrag_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    var free_space
+    *VAR_remove_file_temp_var_ADDRESS="7"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_free_space_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    echo "free space:" ${VAR_free_space_ADDRESS}
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_free_space_ADDRESS
+    display_success
+
+    # Check for the end of the partition or DUMMY_FS_END
+    # *VAR_remove_file_temp_var_ADDRESS="DUMMY_FS"
+    cpu_execute "${CPU_EQUAL_CMD}" ${VAR_defrag_counter_ADDRESS} ${VAR_free_space_ADDRESS}
+    jump_if ${LABEL_defrag_end}
+    echo "less than free"
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_defrag_counter_ADDRESS
+    display_success
+
+    # set -x
+    # Move current line to the target location
+    *VAR_remove_file_temp_var_ADDRESS=*VAR_defrag_cur_line_ADDRESS
+    write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_target_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    
+    # Clear the original line after moving its content
+    *VAR_remove_file_temp_var_ADDRESS=""
+    write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_defrag_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+
+    # Increment counters for the next iteration
+    *VAR_defrag_counter_ADDRESS++
+    *VAR_target_line_ADDRESS++
+
+    # set +x
+
+    jump_to ${LABEL_defrag_loop}
+
+LABEL:defrag_end
+    echo "Defragmentation completed successfully."
+    *VAR_defrag_counter_ADDRESS--
+
+    # Update the partition's free start index after defragmentation
+    *VAR_remove_file_temp_var_ADDRESS="7"
+    var new_free_start
+    *VAR_new_free_start_ADDRESS=*VAR_defrag_counter_ADDRESS
+    cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS} ${VAR_new_free_start_ADDRESS}
+    write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_partition_header_line_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS}
+    echo "updated partition info"
+    *GLOBAL_DISPLAY_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    display_success
+
+    echo "Updated partition free space index."
+    *GLOBAL_OUTPUT_ADDRESS="0"
+    func_return
