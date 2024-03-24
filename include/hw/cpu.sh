@@ -108,7 +108,6 @@ function cpu_execute {
             ;;
         "${CPU_REPLACE_COLUMN_CMD}")
             CPU_REGISTER_OUT=$(echo "${CPU_REGISTER1}" | awk -F' ' '{$'${CPU_REGISTER2}'='${CPU_REGISTER3}'}1')
-            echo "echo \"${CPU_REGISTER1}\" | awk -F' ' '{$'${CPU_REGISTER2}'='${CPU_REGISTER3}'}1'"
             ;;
         "${CPU_STARTS_WITH_CMD}")
             if [[ "${CPU_REGISTER1}" == "${CPU_REGISTER2}"* ]]; then
