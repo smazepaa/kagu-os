@@ -570,6 +570,7 @@ FUNC:remove_file
     var remove_file_cur_line
     var file_remove_line_for_header
     var remove_file_file_found
+    var header_counter
 
     # Step 1: Find the disk, partition, and file entry
     call_func file_found_disk ${GLOBAL_ARG1_ADDRESS}
@@ -649,7 +650,7 @@ FUNC:remove_file
 
 LABEL:file_found
     echo "File found, proceeding with deletion."
-
+    *VAR_header_counter_ADDRESS=*VAR_remove_file_counter_ADDRESS
     # start of file
     *VAR_remove_file_start_index_ADDRESS="8"
     cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_cur_line_ADDRESS} ${VAR_remove_file_start_index_ADDRESS}
@@ -660,7 +661,7 @@ LABEL:file_found
     cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_cur_line_ADDRESS} ${VAR_remove_file_end_index_ADDRESS}
     *VAR_remove_file_end_index_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
     *VAR_remove_file_counter_ADDRESS=*VAR_remove_file_start_index_ADDRESS
-    
+
     LABEL:file_remove_loop
         echo "file remove loop"
         read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_counter_ADDRESS}
@@ -769,6 +770,42 @@ LABEL:defrag_end
     write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_partition_header_line_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS}
 
     echo "Updated partition free space index."
+
+    LABEL:update_header_loop
+        echo "update header loop"
+
+        # Clear the header line
+        *VAR_remove_file_temp_var_ADDRESS=""
+        write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+
+        *VAR_header_counter_ADDRESS++
+
+        var header_cur_line
+        LABEL:move_header
+            echo "move header"
+
+            read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS}
+            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+            *VAR_remove_file_temp_var_ADDRESS=""
+            cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+            jump_if ${LABEL_header_end}
+
+            *VAR_header_counter_ADDRESS--
+            write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_header_cur_line_ADDRESS}
+            *VAR_header_counter_ADDRESS++
+
+            *VAR_remove_file_temp_var_ADDRESS=""
+            write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+
+            jump_to ${LABEL_move_header}
+
     *GLOBAL_OUTPUT_ADDRESS="0"
     func_return
-    set -x
+    # set -x
+
+LABEL:header_end
+    echo "header moved"
+    *GLOBAL_OUTPUT_ADDRESS="0"
+    func_return
+    
