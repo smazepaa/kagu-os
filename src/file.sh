@@ -704,6 +704,7 @@ LABEL:file_end_found
         *VAR_defrag_counter_ADDRESS++
         *GLOBAL_DISPLAY_ADDRESS=*VAR_defrag_counter_ADDRESS
         display_success
+
         *VAR_target_line_ADDRESS=*VAR_remove_file_start_index_ADDRESS
         echo "target line:" ${VAR_target_line_ADDRESS}
         *GLOBAL_DISPLAY_ADDRESS=*VAR_target_line_ADDRESS
@@ -791,10 +792,40 @@ LABEL:defrag_end
             cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
             jump_if ${LABEL_header_end}
 
+            var header_line_start
+            var header_line_end
+
+            # reading the start from the header
+            *VAR_remove_file_temp_var_ADDRESS="8"
+            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+            # updating the file start in the header
+            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_file_size_ADDRESS}
+            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS} ${VAR_header_line_start_ADDRESS}
+            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+            # reading the end from the header
+            *VAR_remove_file_temp_var_ADDRESS="9"
+            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+            *VAR_header_line_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+            # updating the file end in the header
+            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_end_ADDRESS} ${VAR_file_size_ADDRESS}
+            *VAR_header_line_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS} ${VAR_header_line_end_ADDRESS}
+            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+            # write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS}
+
+
+            # move a header line up
             *VAR_header_counter_ADDRESS--
             write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_header_cur_line_ADDRESS}
+            # cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS} ${VAR_header_line_start_ADDRESS}
             *VAR_header_counter_ADDRESS++
 
+            # clearing the previous header line
             *VAR_remove_file_temp_var_ADDRESS=""
             write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
 
@@ -808,4 +839,3 @@ LABEL:header_end
     echo "header moved"
     *GLOBAL_OUTPUT_ADDRESS="0"
     func_return
-    
