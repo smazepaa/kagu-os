@@ -227,24 +227,19 @@ FUNC:system_rm
   *GLOBAL_ARG1_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
   LABEL:system_rm_remove_file
-      # Call function to remove the file and check the result:
       call_func remove_file ${GLOBAL_ARG1_ADDRESS} ${VAR_initial_filename_ADDRESS}
       *VAR_system_rm_result_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-      *GLOBAL_DISPLAY_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-      display_success
 
       *VAR_system_rm_temp_var_ADDRESS="-1"
       cpu_execute "${CPU_EQUAL_CMD}" ${VAR_system_rm_result_ADDRESS} ${VAR_system_rm_temp_var_ADDRESS}
       jump_if ${LABEL_system_rm_error}
 
-      # If the file was successfully removed:
       *GLOBAL_DISPLAY_ADDRESS="File removed successfully."
       display_success
       *GLOBAL_OUTPUT_ADDRESS="0"
       func_return
 
   LABEL:system_rm_error
-      # If there was an error removing the file:
       *GLOBAL_DISPLAY_ADDRESS="Error removing file."
       display_error
       *GLOBAL_OUTPUT_ADDRESS="-1"
