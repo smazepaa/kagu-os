@@ -74,21 +74,6 @@ function display_error {
     echo -e "${RED_COLOR}$(read_from_address ${GLOBAL_DISPLAY_ADDRESS})${END_COLOR}"
 }
 
-
-function encrypt {
-    local rand_prefix=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
-    local rand_suffix=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
-    local encrypted=$(echo "${1}" | tr 'aouyieAOUYEI' 'oayueiOAYUIE')
-    echo "${rand_prefix}${encrypted}${rand_suffix}"
-}
-
-
-function decrypt {
-    local trimmed=${1:2:-2}
-    local decrypted=$(echo "${trimmed}" | tr 'oayueiOAYUEI' 'aouyieAOUYIE')
-    echo "${decrypted}"
-}
-
 # export functions to be used everywhere
 export -f read_input
 export -f display_success
@@ -96,5 +81,3 @@ export -f display_print
 export -f display_println
 export -f display_warning
 export -f display_error
-export -f encrypt
-export -f decrypt

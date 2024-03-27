@@ -621,7 +621,6 @@ FUNC:remove_file
 
 # step 5: delete the file
 LABEL:file_found
-    echo "File found, proceeding with deletion."
     *VAR_header_counter_ADDRESS=*VAR_remove_file_counter_ADDRESS
 
     # 5.1 extract the start of file
@@ -656,8 +655,6 @@ LABEL:file_found
 
 LABEL:file_end_found
     # step 6: disk defragmentation
-    echo "Starting defragmentation process..."
-
     var defrag_counter
     var target_line
 
@@ -711,8 +708,6 @@ LABEL:dummy_fs_end_found
     func_return
 
 LABEL:defrag_end
-    echo "Defragmentation completed successfully."
-
     # step 7: update the free range in the partition header
     var file_size
     cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_remove_file_end_index_ADDRESS} ${VAR_remove_file_start_index_ADDRESS}
