@@ -559,3 +559,49 @@ FUNC:system_permission_int_to_string
         return "rwx"
     fi
     return "-1"
+
+FUNC:count_lines
+    var line_counter
+    var count_file_info
+    var end_line
+    var chunks_start
+    var count_file_chunk_starts
+    var count_file_chunk_ends
+
+    call_func file_info ${VAR_system_wc_file_descriptor_ADDRESS}
+    *VAR_count_file_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_chunks_start_ADDRESS="10"
+    *VAR_end_line_ADDRESS=""
+    *VAR_line_counter_ADDRESS="0"
+
+    LABEL:parse_chunks_loop
+        cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_count_file_info_ADDRESS} ${VAR_chunks_start_ADDRESS}
+
+        cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} ${VAR_end_line_ADDRESS}
+        jump_if ${LABEL_chunks_done}
+
+        *VAR_count_file_chunk_starts_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        *VAR_chunks_start_ADDRESS++
+
+        cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_count_file_info_ADDRESS} ${VAR_chunks_start_ADDRESS}
+        *VAR_count_file_chunk_ends_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        *VAR_chunks_start_ADDRESS++
+
+        LABEL:count_chunk_size
+            var chunk_size
+            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_count_file_chunk_ends_ADDRESS} ${VAR_count_file_chunk_starts_ADDRESS}
+            *VAR_chunk_size_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+            *VAR_chunk_size_ADDRESS++
+
+            cpu_execute "${CPU_ADD_CMD}" ${VAR_line_counter_ADDRESS} ${VAR_chunk_size_ADDRESS}
+            *VAR_line_counter_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+        jump_to ${LABEL_parse_chunks_loop}
+
+    LABEL:chunks_done
+
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_line_counter_ADDRESS
+    display_success
+    return "0"
+    
