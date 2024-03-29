@@ -28,14 +28,12 @@ function write_device_buffer {
         exit_fatal "Device ${DEVICE_TO_WRITE} does not exist"
     fi
 
-    #set -x
     DEVICE_OUTPUT_CONTENT_ESC=$(sed 's/[\*\.&\/]/\\&/g' <<<"$DEVICE_OUTPUT_CONTENT")
     if [ "$(uname -s)" = "Darwin" ]; then
         RES=$(sed -i '' "${DEVICE_OUTPUT_LINE}s/.*/${DEVICE_OUTPUT_CONTENT_ESC}/" "${DEVICE_TO_WRITE}")
     else
         RES=$(sed -i "${DEVICE_OUTPUT_LINE}s/.*/${DEVICE_OUTPUT_CONTENT_ESC}/" "${DEVICE_TO_WRITE}")
     fi
-    #set +x
 }
 
 

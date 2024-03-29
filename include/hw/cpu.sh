@@ -123,14 +123,14 @@ function cpu_execute {
             return 0
             ;;
         "${CPU_ENCRYPT_CMD}")
-            local rand_prefix=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
-            local rand_suffix=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
-            local encrypted=$(echo "${CPU_REGISTER1}" | tr 'aouyieAOUYIE' 'oayueiOAYUEI')
-            CPU_REGISTER_OUT="${rand_prefix}${encrypted}${rand_suffix}"
+            local RAND_PREFIX=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
+            local RAND_SUFFIX=$(head /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%&' | fold -w 2 | head -n 1)
+            local ENCRYPTED=$(echo "${CPU_REGISTER1}" | tr 'aouyieAOUYIE' 'oayueiOAYUEI')
+            CPU_REGISTER_OUT="${RAND_PREFIX}${ENCRYPTED}${RAND_SUFFIX}"
             ;;
         "${CPU_DECRYPT_CMD}")
-            local trimmed=${CPU_REGISTER1:2:-2}
-            CPU_REGISTER_OUT=$(echo "${trimmed}" | tr 'oayueiOAYUEI' 'aouyeiAOUYEI')
+            local TRIMMED=${CPU_REGISTER1:2:-2}
+            CPU_REGISTER_OUT=$(echo "${TRIMMED}" | tr 'oayueiOAYUEI' 'aouyeiAOUYEI')
             ;;
         *)
             exit_fatal "Unknown cpu instruction: ${CPU_REGISTER_CMD}"

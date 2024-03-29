@@ -1,12 +1,12 @@
 PARTITION_TABLE
-part1 dummyFS RANGE: 6 200 FREE_RANGE: 30 200
+part1 dummyFS RANGE: 6 200 FREE_RANGE: 32 200
 part2 dummyFS RANGE: 201 500 FREE_RANGE: 223 500
 part3 dummyFS RANGE: 501 1000 FREE_RANGE: 532 1000
 PARTITION_TABLE_END
 DUMMY_FS
 y.txt file 7 7 7 root root 26 28
-
-n.txt file 7 7 7 root root 30 30
+n.txt file 7 7 7 root root 29 29 31 31
+m.txt file 7 7 7 root root 30 30
 
 
 
@@ -26,7 +26,9 @@ DUMMY_FS_END
 xpkakakakakcz
 FtuhugyewN
 blyiyyiur$i
-SayeyeyeyeGy
+99uhugtctyl5
+kokyctcyoo0
+#wqwcrty4!
 
 
 
