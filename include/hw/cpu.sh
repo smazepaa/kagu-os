@@ -18,6 +18,7 @@ export CPU_LESS_THAN_EQUAL_CMD="less_than_equal"
 export CPU_STARTS_WITH_CMD="starts_with"
 export CPU_ENCRYPT_CMD="encrypt"
 export CPU_DECRYPT_CMD="decrypt"
+export CPU_REMOVE_COLUMN_CMD="remove_column"
 
 # CPU execution function
 
@@ -109,6 +110,25 @@ function cpu_execute {
         "${CPU_REPLACE_COLUMN_CMD}")
             CPU_REGISTER_OUT=$(echo "${CPU_REGISTER1}" | awk -F' ' '{$'${CPU_REGISTER2}'='${CPU_REGISTER3}'}1')
             ;;
+        "${CPU_REMOVE_COLUMN_CMD}")
+            IFS=' ' read -r -a array <<< "${CPU_REGISTER1}"
+            local num_columns=${#array[@]}
+            local PROCESSED_LINE=""
+            
+            local col_to_remove=$((${CPU_REGISTER2} - 1))
+            
+            for (( i=0; i<num_columns; i++ )); do
+                if [[ "$i" -ne "$col_to_remove" ]]; then
+                    if [[ -z "$PROCESSED_LINE" ]]; then
+                        PROCESSED_LINE="${array[i]}"
+                    else
+                        PROCESSED_LINE="$PROCESSED_LINE ${array[i]}"
+                    fi
+                fi
+            done
+            
+            CPU_REGISTER_OUT="${PROCESSED_LINE}"
+        ;;
         "${CPU_STARTS_WITH_CMD}")
             if [[ "${CPU_REGISTER1}" == "${CPU_REGISTER2}"* ]]; then
                 CPU_REGISTER_OUT="1"

@@ -585,8 +585,6 @@ FUNC:remove_file
 
     call_func file_found_disk ${GLOBAL_ARG1_ADDRESS}
     *VAR_remove_file_disk_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-    *GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_disk_info_ADDRESS
-    display_success
 
     cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} "-1"
     jump_if ${LABEL_remove_file_error}
@@ -603,9 +601,7 @@ FUNC:remove_file
     read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_partition_header_line_ADDRESS}
     *VAR_remove_file_partition_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
-    # step 4: find the file
-
-    # 4.1 parse partition info:
+    # 4 parse partition info:
     *VAR_remove_file_temp_var_ADDRESS="4"
     cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
     *VAR_file_remove_partition_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
@@ -614,160 +610,83 @@ FUNC:remove_file
     cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
     *VAR_header_counter_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
-    # chunks
-    # Parse chunks of the file from the file descriptor and store them for processing
+    # 5 go through chunks
     var remove_file_chunk_starts
     var remove_file_chunk_ends
     var remove_file_chunks_count
-
-    *VAR_remove_file_chunks_count_ADDRESS="0"
 
     var chunks_start
     *VAR_chunks_start_ADDRESS="10"
     *VAR_end_line_ADDRESS=""
 
-    # set -x
     LABEL:parse_chunks_loop
         echo "chunks loop"
         cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_chunks_start_ADDRESS}
         *VAR_remove_file_chunk_starts_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        *GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_chunk_starts_ADDRESS
+        display_success
 
         cpu_execute "${CPU_EQUAL_CMD}" ${VAR_remove_file_chunk_starts_ADDRESS} ${VAR_end_line_ADDRESS}
-        jump_if ${LABEL_okoooook}
+        jump_if ${LABEL_bububu}
 
-        *VAR_chunks_start_ADDRESS++
-        *GLOBAL_DISPLAY_ADDRESS=*VAR_chunks_start_ADDRESS
+        cpu_execute "${CPU_REMOVE_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_chunks_start_ADDRESS}
+        *GLOBAL_DISPLAY_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
         display_success
+
+        *VAR_remove_file_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        
+        cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_chunks_start_ADDRESS}
+        *VAR_remove_file_chunk_ends_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        *GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_chunk_ends_ADDRESS
+        display_success
+
+        cpu_execute "${CPU_REMOVE_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_chunks_start_ADDRESS}
+        *VAR_remove_file_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+        jump_to ${LABEL_part_found}
 
         jump_to ${LABEL_parse_chunks_loop}
 
-    LABEL:okoooook
-        var back_counter
-        *VAR_back_counter_ADDRESS=*VAR_chunks_start_ADDRESS
-        *VAR_back_counter_ADDRESS--
-        *GLOBAL_DISPLAY_ADDRESS=*VAR_back_counter_ADDRESS
-        display_success
-        var start_chunk
-
-        LABEL:chunks_done
-            cpu_execute "${CPU_EQUAL_CMD}" ${VAR_back_counter_ADDRESS} ${VAR_chunks_start_ADDRESS}
-            jump_if ${LABEL_update_header_loop}
-
-            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_back_counter_ADDRESS}
-            *VAR_remove_file_chunk_ends_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-            *GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_chunk_ends_ADDRESS
-            display_success
-            *VAR_back_counter_ADDRESS--
-
-            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_back_counter_ADDRESS}
-            *VAR_remove_file_chunk_starts_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-            *GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_chunk_starts_ADDRESS
-            display_success
-
-            echo "counter"
-            *GLOBAL_DISPLAY_ADDRESS=*VAR_back_counter_ADDRESS
-            display_success
-
-            jump_to ${LABEL_file_found}
-            LABEL:jump_back
-
-            *VAR_back_counter_ADDRESS--
-
-            jump_to ${LABEL_chunks_done}
-
-
-    # step 8: update the files' headers
-    LABEL:update_header_loop
-        # 8.1 clear the header line for the deleted file
-        *VAR_remove_file_temp_var_ADDRESS=""
-        write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-        *VAR_header_counter_ADDRESS++
-
-        var header_cur_line
-
-        # 8.2 update other headers
-        LABEL:move_header
-            read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS}
-            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-            # 8.2.1 check if reached the end of header lines
-            *VAR_remove_file_temp_var_ADDRESS=""
-            cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-            jump_if ${LABEL_bububu}
-
-            var header_line_start
-            var header_line_end
-
-            # 8.2.2 read and update the start from the header
-            *VAR_remove_file_temp_var_ADDRESS="8"
-            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_file_size_ADDRESS}
-            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS} ${VAR_header_line_start_ADDRESS}
-            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-            # 8.2.3 read and update the end from the header
-            *VAR_remove_file_temp_var_ADDRESS="9"
-            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-            *VAR_header_line_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_end_ADDRESS} ${VAR_file_size_ADDRESS}
-            *VAR_header_line_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS} ${VAR_header_line_end_ADDRESS}
-            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-            # 8.2.4 move a header line up and clean the previous
-            *VAR_header_counter_ADDRESS--
-            write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_header_cur_line_ADDRESS}
-            *VAR_header_counter_ADDRESS++
-
-            *VAR_remove_file_temp_var_ADDRESS=""
-            write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-
-            jump_to ${LABEL_move_header}
-
     LABEL:bububu
-
     *GLOBAL_OUTPUT_ADDRESS="0"
     func_return
 
-
-# step 5: delete the file
-LABEL:file_found
-
+LABEL:part_found
+    echo "part found"
     *VAR_remove_file_counter_ADDRESS=*VAR_remove_file_chunk_starts_ADDRESS
     *VAR_GLOBAL_DISPLAY_ADDRESS=*VAR_remove_file_counter_ADDRESS
     display_success
 
-    LABEL:file_remove_loop
+    LABEL:part_remove_loop
+
+        *VAR_remove_file_temp_var_ADDRESS=*VAR_remove_file_chunk_ends_ADDRESS
+        *VAR_remove_file_temp_var_ADDRESS++
+        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_remove_file_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+        jump_if ${LABEL_part_end_found}
+
+
         # 5.3 remove the file line
         read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_counter_ADDRESS}
         *VAR_file_current_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        *GLOBAL_DISPLAY_ADDRESS=*VAR_file_current_line_ADDRESS
+        display_success
+
+        # 5.4 check for file end
 
         *VAR_remove_file_temp_var_ADDRESS=""
         write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
 
-        # 5.4 check for file end
-        *VAR_remove_file_temp_var_ADDRESS=*VAR_remove_file_chunk_ends_ADDRESS
-        *VAR_remove_file_temp_var_ADDRESS++
-        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_remove_file_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-        jump_if ${LABEL_file_end_found}
-
         *VAR_remove_file_counter_ADDRESS++
-        jump_to ${LABEL_file_remove_loop}
+        jump_to ${LABEL_part_remove_loop}
 
-    # *GLOBAL_OUTPUT_ADDRESS="0"
-    # func_return
-
-LABEL:file_end_found
-    # step 6: disk defragmentation
+LABEL:part_end_found
     var defrag_counter
     var target_line
 
     *VAR_defrag_counter_ADDRESS=*VAR_remove_file_chunk_ends_ADDRESS
     *VAR_defrag_counter_ADDRESS++
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_defrag_counter_ADDRESS
+    display_success
 
     *VAR_target_line_ADDRESS=*VAR_remove_file_chunk_starts_ADDRESS
 
@@ -776,6 +695,8 @@ LABEL:file_end_found
     *VAR_remove_file_temp_var_ADDRESS="7"
     cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
     *VAR_free_space_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_free_space_ADDRESS
+    display_success
 
     # 6.2 move files up to fill the gap
     LABEL:defrag_loop
@@ -799,42 +720,82 @@ LABEL:file_end_found
         *VAR_target_line_ADDRESS++
 
         jump_to ${LABEL_defrag_loop}
-        
-    # *GLOBAL_OUTPUT_ADDRESS="0"
-    # func_return
 
-LABEL:remove_file_error
-    echo "Error: Unable to locate the disk or partition."
-    display_error
-    *GLOBAL_OUTPUT_ADDRESS="-1"
-    func_return
+LABEL:defrag_part
 
-LABEL:dummy_fs_end_found
-    echo "File not found in the filesystem."
-    display_error
-    *GLOBAL_OUTPUT_ADDRESS="-1"
-    func_return
 
 LABEL:defrag_end
-    # step 7: update the free range in the partition header
-    var file_size
+    # 8.2 update other headers
+    var part_size
     cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_remove_file_chunk_ends_ADDRESS} ${VAR_remove_file_chunk_starts_ADDRESS}
-    *GLOBAL_OUTPUT_ADDRESS++
-    *VAR_file_size_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    *VAR_part_size_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    *VAR_part_size_ADDRESS++
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_part_size_ADDRESS
+    display_success
 
-    *VAR_remove_file_temp_var_ADDRESS="7"
-    var new_free_start
-    cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_free_space_ADDRESS} ${VAR_file_size_ADDRESS}
-    *VAR_new_free_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    *VAR_header_counter_ADDRESS--
+    var current_file_header
+    *VAR_current_file_header_ADDRESS="1"
+    var modified_info
+    *VAR_modified_info_ADDRESS="1"
+    
+    LABEL:move_header
+        var header_cur_line
+        *VAR_header_counter_ADDRESS++
+        read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS}
+        *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        *GLOBAL_DISPLAY_ADDRESS=*VAR_header_cur_line_ADDRESS
+        display_success
 
-    cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS} ${VAR_new_free_start_ADDRESS}
-    write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_partition_header_line_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS}
+        # 8.2.1 check if reached the end of header lines
+        *VAR_remove_file_temp_var_ADDRESS=""
+        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+        jump_if ${LABEL_parse_chunks_loop}
 
-    jump_to ${LABEL_jump_back}
+        var header_line_start
+        var header_line_end
 
-    # *GLOBAL_OUTPUT_ADDRESS="0"
-    # func_return
+        var header_first_chunk
+        *VAR_header_first_chunk_ADDRESS="8"
+        var empty_column
+        *VAR_empty_column_ADDRESS=""
 
-LABEL:header_end
-    *GLOBAL_OUTPUT_ADDRESS="0"
-    func_return
+        LABEL:update_header_loop
+            # 8.2.2 read and update the start from the header
+            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
+            cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} ${VAR_empty_column_ADDRESS}
+            jump_if ${LABEL_move_header}
+            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+            *GLOBAL_DISPLAY_ADDRESS=*VAR_header_line_start_ADDRESS
+            display_success
+
+            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_part_size_ADDRESS}
+            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+            *GLOBAL_DISPLAY_ADDRESS=*VAR_header_line_start_ADDRESS
+            display_success
+            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS} ${VAR_header_line_start_ADDRESS}
+            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+            # 8.2.3 read and update the end from the header
+            *VAR_header_first_chunk_ADDRESS++
+            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
+            *VAR_header_line_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_end_ADDRESS} ${VAR_part_size_ADDRESS}
+            *VAR_header_line_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS} ${VAR_header_line_end_ADDRESS}
+            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+            *VAR_header_first_chunk_ADDRESS++
+
+            write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_header_cur_line_ADDRESS}
+            jump_to ${LABEL_update_header_loop}
+
+        # # 8.2.4 move a header line up and clean the previous
+        # *VAR_header_counter_ADDRESS--
+        # write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_header_cur_line_ADDRESS}
+        # *VAR_header_counter_ADDRESS++
+
+        # *VAR_remove_file_temp_var_ADDRESS=""
+        # write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+        
+        jump_to ${LABEL_move_header}
