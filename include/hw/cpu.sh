@@ -14,6 +14,7 @@ export CPU_CONCAT_SPACES_CMD="concat_spaces"
 export CPU_GET_COLUMN_CMD="get_column"
 export CPU_REPLACE_COLUMN_CMD="replace_column"
 export CPU_LESS_THAN_CMD="less_than"
+export CPU_GREATER_THAN_CMD="greater_than"
 export CPU_LESS_THAN_EQUAL_CMD="less_than_equal"
 export CPU_STARTS_WITH_CMD="starts_with"
 export CPU_ENCRYPT_CMD="encrypt"
@@ -63,6 +64,15 @@ function cpu_execute {
             ;;
         "${CPU_LESS_THAN_CMD}")
             if [ "${CPU_REGISTER1}" -lt "${CPU_REGISTER2}" ]; then
+                CPU_REGISTER_OUT="1"
+            else
+                CPU_REGISTER_OUT="0"
+            fi
+            write_to_address ${GLOBAL_COMPARE_RES_ADDRESS} ${CPU_REGISTER_OUT}
+            return 0
+            ;;
+        "${CPU_GREATER_THAN_CMD}")
+            if [ "${CPU_REGISTER1}" -gt "${CPU_REGISTER2}" ]; then
                 CPU_REGISTER_OUT="1"
             else
                 CPU_REGISTER_OUT="0"

@@ -4,7 +4,7 @@ part2 dummyFS RANGE: 201 500 FREE_RANGE: 228 500
 part3 dummyFS RANGE: 501 1000 FREE_RANGE: 535 1000
 PARTITION_TABLE_END
 DUMMY_FS
-1.sh file 7 7 7 root root 23 26 37 38
+1.sh file 7 1 7 root root 23 26 37 38
 2.sh file 7 7 7 root root 27 30
 3.sh file 7 7 7 root root 31 34
 4.sh file 7 7 7 root root 35 36

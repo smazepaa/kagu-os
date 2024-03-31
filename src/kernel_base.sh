@@ -103,6 +103,11 @@ if *VAR_original_input_cmd_ADDRESS=="wc"
     jump_to ${LABEL_kernel_loop_start}
 fi
 
+if *VAR_original_input_cmd_ADDRESS=="chmod"
+    call_func system_chmod ${VAR_original_input_arg1_ADDRESS} ${VAR_original_input_arg2_ADDRESS}
+    jump_to ${LABEL_kernel_loop_start}
+fi
+
 *GLOBAL_DISPLAY_ADDRESS="Unknown command or bad args"
 display_warning
 
@@ -343,6 +348,52 @@ FUNC:system_wc
             call_func count_lines ${VAR_system_wc_file_descriptor_ADDRESS}
         fi
         return "0"
+
+FUNC:system_chmod
+    var system_chmod_temp_var
+    var system_chmod_file_descriptor
+    var command_chmod
+    
+    if *GLOBAL_ARG1_ADDRESS=="g+r"
+        *VAR_command_chmod_ADDRESS="g+r"
+        jump_to ${LABEL_arg1_valid}
+    fi
+
+    if *GLOBAL_ARG1_ADDRESS=="g-r"
+        *VAR_command_chmod_ADDRESS="g-r"
+        jump_to ${LABEL_arg1_valid}
+    fi
+
+    *GLOBAL_DISPLAY_ADDRESS="Unknown args. Usage: chmod <mode> <filename>"
+    display_error
+    return "1"
+
+    LABEL:arg1_valid
+
+    if *GLOBAL_ARG2_ADDRESS==""
+        *GLOBAL_DISPLAY_ADDRESS="Filename not provided. Usage: chmod <mode> <filename>"
+        display_error
+        return "1"
+    fi
+
+    *VAR_system_chmod_temp_var_ADDRESS="/"
+    cpu_execute "${CPU_STARTS_WITH_CMD}" ${GLOBAL_ARG2_ADDRESS} ${VAR_system_chmod_temp_var_ADDRESS}
+    jump_if ${LABEL_system_chmod_path_absolute}
+    cpu_execute "${CPU_CONCAT_CMD}" ${GLOBAL_WORKING_DIR_ADDRESS} ${GLOBAL_ARG2_ADDRESS}
+    *GLOBAL_ARG2_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    LABEL:system_chmod_path_absolute
+    call_func file_open ${GLOBAL_ARG2_ADDRESS}
+    if *GLOBAL_OUTPUT_ADDRESS=="-1"
+        *GLOBAL_DISPLAY_ADDRESS="No such file"
+        display_error
+        return "1"
+    fi
+
+    *VAR_system_chmod_file_descriptor_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    call_func change_permission ${VAR_system_chmod_file_descriptor_ADDRESS} ${VAR_command_chmod_ADDRESS}
+    
+    return "0"
 
 ##########################################
 # KERNEL_END                             #

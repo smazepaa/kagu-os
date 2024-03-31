@@ -604,4 +604,69 @@ FUNC:count_lines
     *GLOBAL_DISPLAY_ADDRESS=*VAR_line_counter_ADDRESS
     display_success
     return "0"
+
+FUNC:change_permission
+    var change_file_info
+    var change_file_permission
+    var disk_name
+    var header_line_counter
+    var header_line
+    var temp_var
+    var add_number
+
+    call_func file_info ${VAR_system_chmod_file_descriptor_ADDRESS}
+    *VAR_change_file_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_temp_var_ADDRESS="6"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_change_file_info_ADDRESS} ${VAR_temp_var_ADDRESS}
+    *VAR_header_line_counter_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_temp_var_ADDRESS="2"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_change_file_info_ADDRESS} ${VAR_temp_var_ADDRESS}
+    *VAR_disk_name_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    read_device_buffer ${VAR_disk_name_ADDRESS} ${VAR_header_line_counter_ADDRESS}
+    *VAR_header_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_temp_var_ADDRESS="4"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_line_ADDRESS} ${VAR_temp_var_ADDRESS}
+    *VAR_change_file_permission_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_add_number_ADDRESS="4"
+    if *VAR_command_chmod_ADDRESS=="g+r"
+        jump_to ${LABEL_add_read}
+    fi
+
+    if *VAR_command_chmod_ADDRESS=="g-r"
+        var less_than_number
+        *VAR_less_than_number_ADDRESS="4"
+
+        cpu_execute "${CPU_LESS_THAN_CMD}" ${VAR_change_file_permission_ADDRESS} ${VAR_less_than_number_ADDRESS}
+        jump_if ${LABEL_not_range}
+
+        cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_change_file_permission_ADDRESS} ${VAR_add_number_ADDRESS}
+        *VAR_change_file_permission_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        jump_to ${LABEL_permission_replace}
+    fi
     
+    LABEL:permission_replace
+    cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_line_ADDRESS} ${VAR_temp_var_ADDRESS} ${VAR_change_file_permission_ADDRESS}
+    write_device_buffer ${VAR_disk_name_ADDRESS} ${VAR_header_line_counter_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS}
+
+    LABEL:not_range
+    return "0"
+
+LABEL:add_read
+    var greater_than_number
+    *VAR_greater_than_number_ADDRESS="3"
+    if *VAR_change_file_permission_ADDRESS=="0"
+        *VAR_change_file_permission_ADDRESS="4"
+        jump_to ${LABEL_permission_replace}
+    fi
+
+    cpu_execute "${CPU_GREATER_THAN_CMD}" ${VAR_change_file_permission_ADDRESS} ${VAR_greater_than_number_ADDRESS}
+    jump_if ${LABEL_not_range}
+
+    cpu_execute "${CPU_ADD_CMD}" ${VAR_change_file_permission_ADDRESS} ${VAR_add_number_ADDRESS}
+    *VAR_change_file_permission_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    jump_to ${LABEL_permission_replace}
