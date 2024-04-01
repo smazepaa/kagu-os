@@ -220,14 +220,13 @@ FUNC:system_rm
 
   # Check if the path is not absolute, then concatenate it with the working directory:
   *VAR_system_rm_temp_var_ADDRESS="/"
-  *VAR_initial_filename_ADDRESS=*GLOBAL_ARG1_ADDRESS
   cpu_execute "${CPU_STARTS_WITH_CMD}" ${GLOBAL_ARG1_ADDRESS} ${VAR_system_rm_temp_var_ADDRESS}
   jump_if ${LABEL_system_rm_remove_file}
   cpu_execute "${CPU_CONCAT_CMD}" ${GLOBAL_WORKING_DIR_ADDRESS} ${GLOBAL_ARG1_ADDRESS}
   *GLOBAL_ARG1_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
   LABEL:system_rm_remove_file
-      call_func remove_file ${GLOBAL_ARG1_ADDRESS} ${VAR_initial_filename_ADDRESS}
+      call_func remove_file ${GLOBAL_ARG1_ADDRESS}
       *VAR_system_rm_result_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
       *VAR_system_rm_temp_var_ADDRESS="-1"
