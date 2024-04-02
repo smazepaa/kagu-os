@@ -604,14 +604,6 @@ FUNC:remove_file
     read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_partition_header_line_ADDRESS}
     *VAR_remove_file_partition_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
-    *VAR_remove_file_temp_var_ADDRESS="4"
-    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-    *VAR_file_remove_partition_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-    *VAR_remove_file_temp_var_ADDRESS="6"
-    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-    *VAR_header_counter_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
     *VAR_chunks_start_ADDRESS="10"
     *VAR_end_line_ADDRESS=""
 
@@ -699,6 +691,18 @@ LABEL:defrag_end
     *VAR_part_size_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
     *VAR_part_size_ADDRESS++
 
+    *VAR_remove_file_temp_var_ADDRESS="4"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_partition_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_file_remove_partition_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    *VAR_remove_file_temp_var_ADDRESS="6"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_header_counter_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+    # to skip dummy-fs-start line need ++
+    *VAR_file_remove_partition_start_ADDRESS++
+
+    # change free space in the partition header
     *VAR_remove_file_temp_var_ADDRESS="7"
     cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_free_space_ADDRESS} ${VAR_part_size_ADDRESS}
     *VAR_free_space_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
@@ -710,91 +714,94 @@ LABEL:defrag_end
     var header_line_end
 
     var header_first_chunk
-    *VAR_header_first_chunk_ADDRESS="8"
     var empty_column
     *VAR_empty_column_ADDRESS=""
 
     var header_cur_line
 
-    read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS}
+    LABEL:update_headers
+    *VAR_header_first_chunk_ADDRESS="7"
+
+    read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_file_remove_partition_start_ADDRESS}
+    *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS 
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_header_cur_line_ADDRESS
+    display_success
+
+    cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_empty_column_ADDRESS}
+    jump_if ${LABEL_parse_chunks_loop}
+
+    cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_counter_ADDRESS} ${VAR_file_remove_partition_start_ADDRESS}
+    jump_if ${LABEL_remove_columns}
+
+
+    LABEL:back_to_update
+
+        cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
+        *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_empty_column_ADDRESS}
+        jump_if ${LABEL_continue_to_update}
+
+        # *VAR_remove_file_chunk_starts_ADDRESS++
+        cpu_execute "${CPU_LESS_THAN_CMD}" ${VAR_remove_file_chunk_starts_ADDRESS} ${VAR_header_line_start_ADDRESS}
+        jump_if ${LABEL_subtract_size}
+        LABEL:continue
+        # *VAR_remove_file_chunk_starts_ADDRESS--
+
+        *VAR_header_first_chunk_ADDRESS++
+
+        jump_to ${LABEL_back_to_update}
+
+    LABEL:continue_to_update
+    *VAR_file_remove_partition_start_ADDRESS++
+    jump_to ${LABEL_update_headers}
+
+LABEL:subtract_size
+    cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_part_size_ADDRESS}
+    *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS} ${VAR_header_line_start_ADDRESS}
     *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-    *VAR_first_chunk_start_ADDRESS="8"
-
-    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_first_chunk_start_ADDRESS}
+    write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_file_remove_partition_start_ADDRESS} ${VAR_header_cur_line_ADDRESS}
+    jump_to ${LABEL_continue}
+    
+LABEL:remove_columns
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
     cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} ${VAR_empty_column_ADDRESS}
     jump_if ${LABEL_move_headers_up}
 
-    cpu_execute "${CPU_REMOVE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_first_chunk_start_ADDRESS}
+    cpu_execute "${CPU_REMOVE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
     *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-    cpu_execute "${CPU_REMOVE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_first_chunk_start_ADDRESS}
+    cpu_execute "${CPU_REMOVE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
     *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
+    *GLOBAL_DISPLAY_ADDRESS=*VAR_header_cur_line_ADDRESS
+    display_success
     write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_header_cur_line_ADDRESS}
+    jump_if ${LABEL_back_to_update}
+
+LABEL:move_headers_up
+    var remove_file_header
+    *VAR_remove_file_temp_var_ADDRESS="6"
+    cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+    *VAR_remove_file_header_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
     
-    jump_to ${LABEL_update_header_loop}
+    *VAR_remove_file_temp_var_ADDRESS=""
+    write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_header_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
 
-    LABEL:move_header
-        *VAR_header_first_chunk_ADDRESS="8"
-        *VAR_empty_column_ADDRESS=""
-        
-        *VAR_header_counter_ADDRESS++
-        read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS}
-        *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+    LABEL:up_loop
+        var line_to_move
+        *VAR_remove_file_header_ADDRESS++
+        read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_header_ADDRESS}
+        *VAR_line_to_move_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_line_to_move_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
+        jump_if ${LABEL_removal_end}
 
-        *VAR_remove_file_temp_var_ADDRESS=""
-        cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-        jump_if ${LABEL_parse_chunks_loop}
-
-        LABEL:update_header_loop
-            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
-            cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} ${VAR_empty_column_ADDRESS}
-            jump_if ${LABEL_move_header}
-            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_part_size_ADDRESS}
-            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS} ${VAR_header_line_start_ADDRESS}
-            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-            *VAR_header_first_chunk_ADDRESS++
-            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
-            *VAR_header_line_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-
-            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_end_ADDRESS} ${VAR_part_size_ADDRESS}
-            *VAR_header_line_end_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS} ${VAR_header_line_end_ADDRESS}
-            *VAR_header_cur_line_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-            *VAR_header_first_chunk_ADDRESS++
-
-            write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_header_counter_ADDRESS} ${VAR_header_cur_line_ADDRESS}
-            jump_to ${LABEL_update_header_loop}
-
-        jump_to ${LABEL_move_header}
-
-    LABEL:move_headers_up
-        var remove_file_header
-        *VAR_remove_file_temp_var_ADDRESS="6"
-        cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-        *VAR_remove_file_header_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-        
-        *VAR_remove_file_temp_var_ADDRESS=""
         write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_header_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
 
-        LABEL:up_loop
-            var line_to_move
-            *VAR_remove_file_header_ADDRESS++
-            read_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_header_ADDRESS}
-            *VAR_line_to_move_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
-            cpu_execute "${CPU_EQUAL_CMD}" ${VAR_line_to_move_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-            jump_if ${LABEL_removal_end}
-
-            write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_header_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
-
-            *VAR_remove_file_header_ADDRESS--
-            write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_header_ADDRESS} ${VAR_line_to_move_ADDRESS}
-            *VAR_remove_file_header_ADDRESS++
-            jump_to ${LABEL_up_loop}
+        *VAR_remove_file_header_ADDRESS--
+        write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_header_ADDRESS} ${VAR_line_to_move_ADDRESS}
+        *VAR_remove_file_header_ADDRESS++
+        jump_to ${LABEL_up_loop}
 
 LABEL:remove_file_error
     *GLOBAL_OUTPUT_ADDRESS="-1"

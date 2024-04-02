@@ -150,7 +150,7 @@ function cpu_execute {
             ;;
         "${CPU_DECRYPT_CMD}")
             local TRIMMED=${CPU_REGISTER1:2:-2}
-            CPU_REGISTER_OUT=$(echo "${TRIMMED}" | tr 'oayueiOAYUEI' 'aouyeiAOUYEI')
+            CPU_REGISTER_OUT=$(echo "${TRIMMED}" | tr 'oayueiOAYUIE' 'aouyeiAOUYEI')
             ;;
         *)
             exit_fatal "Unknown cpu instruction: ${CPU_REGISTER_CMD}"
