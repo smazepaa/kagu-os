@@ -699,10 +699,8 @@ LABEL:defrag_end
     cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_remove_file_info_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
     *VAR_header_counter_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
-    # to skip dummy-fs-start line need ++
     *VAR_file_remove_partition_start_ADDRESS++
 
-    # change free space in the partition header
     *VAR_remove_file_temp_var_ADDRESS="7"
     cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_free_space_ADDRESS} ${VAR_part_size_ADDRESS}
     *VAR_free_space_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
@@ -733,8 +731,8 @@ LABEL:defrag_end
     cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_counter_ADDRESS} ${VAR_file_remove_partition_start_ADDRESS}
     jump_if ${LABEL_remove_columns}
 
-
     LABEL:back_to_update
+        *VAR_header_first_chunk_ADDRESS++
 
         cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_header_cur_line_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
         *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
@@ -742,13 +740,9 @@ LABEL:defrag_end
         cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_empty_column_ADDRESS}
         jump_if ${LABEL_continue_to_update}
 
-        # *VAR_remove_file_chunk_starts_ADDRESS++
         cpu_execute "${CPU_LESS_THAN_CMD}" ${VAR_remove_file_chunk_starts_ADDRESS} ${VAR_header_line_start_ADDRESS}
         jump_if ${LABEL_subtract_size}
         LABEL:continue
-        # *VAR_remove_file_chunk_starts_ADDRESS--
-
-        *VAR_header_first_chunk_ADDRESS++
 
         jump_to ${LABEL_back_to_update}
 
@@ -796,6 +790,22 @@ LABEL:move_headers_up
         cpu_execute "${CPU_EQUAL_CMD}" ${VAR_line_to_move_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
         jump_if ${LABEL_removal_end}
 
+        *VAR_header_first_chunk_ADDRESS="8"
+        LABEL:update_after
+            cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_line_to_move_ADDRESS} ${VAR_header_first_chunk_ADDRESS}
+            *VAR_header_line_start_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+            cpu_execute "${CPU_EQUAL_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_empty_column_ADDRESS}
+            jump_if ${LABEL_continue_moving}
+
+            cpu_execute "${CPU_SUBTRACT_CMD}" ${VAR_header_line_start_ADDRESS} ${VAR_part_size_ADDRESS}
+            cpu_execute "${CPU_REPLACE_COLUMN_CMD}" ${VAR_line_to_move_ADDRESS} ${VAR_header_first_chunk_ADDRESS} ${GLOBAL_OUTPUT_ADDRESS}
+            *VAR_line_to_move_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
+
+            *VAR_header_first_chunk_ADDRESS++
+            jump_to ${LABEL_update_after}
+        LABEL:continue_moving
+        
         write_device_buffer ${VAR_remove_file_disk_name_ADDRESS} ${VAR_remove_file_header_ADDRESS} ${VAR_remove_file_temp_var_ADDRESS}
 
         *VAR_remove_file_header_ADDRESS--
