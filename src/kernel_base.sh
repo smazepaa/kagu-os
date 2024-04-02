@@ -341,7 +341,8 @@ FUNC:system_wc
     LABEL:system_wc_path_absolute
         call_func file_open ${GLOBAL_ARG2_ADDRESS}
         if *GLOBAL_OUTPUT_ADDRESS=="-1"
-            *GLOBAL_DISPLAY_ADDRESS="No such file"
+            *GLOBAL_DISPLAY_ADDRESS="Error: No such file"
+            display_error
             return "1"
         fi
             *VAR_system_wc_file_descriptor_ADDRESS=*GLOBAL_OUTPUT_ADDRESS

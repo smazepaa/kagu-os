@@ -571,6 +571,9 @@ FUNC:count_lines
     call_func file_info ${VAR_system_wc_file_descriptor_ADDRESS}
     *VAR_count_file_info_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
+    cpu_execute "${CPU_EQUAL_CMD}" ${GLOBAL_OUTPUT_ADDRESS} "-1"
+    jump_if ${LABEL_count_error}
+
     *VAR_chunks_start_ADDRESS="10"
     *VAR_end_line_ADDRESS=""
     *VAR_line_counter_ADDRESS="0"
@@ -604,6 +607,11 @@ FUNC:count_lines
     *GLOBAL_DISPLAY_ADDRESS=*VAR_line_counter_ADDRESS
     display_success
     return "0"
+
+LABEL:count_error
+    *GLOBAL_DISPLAY_ADDRESS="Error: could not retreive file info"
+    display_error
+    return "-1"
 
 FUNC:change_permission
     var change_file_info
@@ -664,7 +672,7 @@ LABEL:add_read
         jump_to ${LABEL_permission_replace}
     fi
 
-    cpu_execute "${CPU_GREATER_THAN_CMD}" ${VAR_change_file_permission_ADDRESS} ${VAR_greater_than_number_ADDRESS}
+    cpu_execute "${CPU_LESS_THAN_CMD}" ${VAR_greater_than_number_ADDRESS} ${VAR_change_file_permission_ADDRESS}
     jump_if ${LABEL_not_range}
 
     cpu_execute "${CPU_ADD_CMD}" ${VAR_change_file_permission_ADDRESS} ${VAR_add_number_ADDRESS}

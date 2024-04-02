@@ -71,15 +71,6 @@ function cpu_execute {
             write_to_address ${GLOBAL_COMPARE_RES_ADDRESS} ${CPU_REGISTER_OUT}
             return 0
             ;;
-        "${CPU_GREATER_THAN_CMD}")
-            if [ "${CPU_REGISTER1}" -gt "${CPU_REGISTER2}" ]; then
-                CPU_REGISTER_OUT="1"
-            else
-                CPU_REGISTER_OUT="0"
-            fi
-            write_to_address ${GLOBAL_COMPARE_RES_ADDRESS} ${CPU_REGISTER_OUT}
-            return 0
-            ;;
          "${CPU_LESS_THAN_EQUAL_CMD}")
             if [ "${CPU_REGISTER1}" -le "${CPU_REGISTER2}" ]; then
                 CPU_REGISTER_OUT="1"
