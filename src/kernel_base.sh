@@ -520,7 +520,6 @@ FUNC:find_highest_priority
     var highest_priority
     var process_counter
     var highest_priority_line
-    var process_id
 
     var priority_column
     *VAR_priority_column_ADDRESS="4"
@@ -564,12 +563,8 @@ FUNC:find_highest_priority
 
 
 FUNC:run_highest_priority
-    var process_id
     var process_status
     var process_info
-    var process_filename
-    var temp_counter
-    var process_file_descriptor
 
     copy_from_to_address "$(read_from_address ${VAR_highest_priority_counter_ADDRESS})" ${VAR_process_info_ADDRESS}
 
