@@ -131,6 +131,7 @@ jump_to ${GLOBAL_KERNEL_START}
 while [ 1 = 1 ]
 do
     SCHED_COUNTER=$(read_from_address ${GLOBAL_SCHED_COUNTER_ADDRESS})
+    # echo "$(read_from_address ${SCHED_COUNTER})"
     SCHED_PID=$(read_from_address ${GLOBAL_SCHED_PID_ADDRESS})
     if [ "${SCHED_PID}" = "0" ] || [ "${SCHED_COUNTER}" = "0" ]; then
         # Go to the next command:
@@ -150,8 +151,13 @@ do
         eval $(read_from_address ${NEXT_CMD}) || exit_fatal "Incorrect instruction"
         dump_RAM_to_file
     else
-        write_to_address ${GLOBAL_SCHED_COUNTER_ADDRESS} "$(($SCHED_COUNTER - 1))"
-        v_jump_increment_counter
+        if [ "${GLOBAL_SCHED_COUNTER_ADDRESS}" = "100" ]; then
+            write_to_address ${GLOBAL_SCHED_COUNTER_ADDRESS} ${SCHED_COUNTER}
+            v_jump_increment_counter
+        else
+            write_to_address ${GLOBAL_SCHED_COUNTER_ADDRESS} "$(($SCHED_COUNTER - 1))"
+            v_jump_increment_counter
+        fi
 
         OFFSET=$(get_process_mem_offset $(read_from_address ${GLOBAL_CURRENT_PID_INFO_ADDRESS}))
         NEXT_CMD=$(v_read_from_address ${LOCAL_NEXT_CMD_ADDRESS} )

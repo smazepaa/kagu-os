@@ -1,12 +1,12 @@
 PARTITION_TABLE
-part1 dummyFS RANGE: 6 200 FREE_RANGE: 52 200
+part1 dummyFS RANGE: 6 200 FREE_RANGE: 54 200
 part2 dummyFS RANGE: 201 500 FREE_RANGE: 223 500
 part3 dummyFS RANGE: 501 1000 FREE_RANGE: 532 1000
 PARTITION_TABLE_END
 DUMMY_FS
 a.sh file 7 7 7 root root 26 51
-
-
+b.sh file 7 7 7 root root 52 62
+c.sh file 7 7 7 root root 63 73
 
 
 
@@ -49,26 +49,28 @@ v_copy_from_to_address ${LOCAL_VAR3_ADDRESS} ${LOCAL_DISPLAY_ADDRESS}
 v_display_println
 v_jump_to 5
 v_exit
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+########PROGRAM START##############
+v_write_to_address ${LOCAL_DISPLAY_ADDRESS} "Enter the value(b.sh):"
+v_display_println
+v_read_input
+v_copy_from_to_address ${LOCAL_INPUT_ADDRESS} ${LOCAL_VAR1_ADDRESS}
+v_copy_from_to_address ${LOCAL_VAR1_ADDRESS} ${LOCAL_DISPLAY_ADDRESS}
+v_display_println
+v_write_to_address ${LOCAL_VAR2_ADDRESS} "exit"
+v_cpu_execute ${CPU_NOT_EQUAL_CMD} ${LOCAL_VAR1_ADDRESS} ${LOCAL_VAR2_ADDRESS}
+v_jump_if ${LOCAL_TEXT_SEGMENT_START_ADDRESS}
+v_exit
+########PROGRAM START##############
+v_write_to_address ${LOCAL_DISPLAY_ADDRESS} "Enter the value(c.sh):"
+v_display_println
+v_read_input
+v_copy_from_to_address ${LOCAL_INPUT_ADDRESS} ${LOCAL_VAR1_ADDRESS}
+v_copy_from_to_address ${LOCAL_VAR1_ADDRESS} ${LOCAL_DISPLAY_ADDRESS}
+v_display_println
+v_write_to_address ${LOCAL_VAR2_ADDRESS} "exit"
+v_cpu_execute ${CPU_NOT_EQUAL_CMD} ${LOCAL_VAR1_ADDRESS} ${LOCAL_VAR2_ADDRESS}
+v_jump_if ${LOCAL_TEXT_SEGMENT_START_ADDRESS}
+v_exit
 
 
 
