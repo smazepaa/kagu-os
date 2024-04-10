@@ -629,9 +629,6 @@ FUNC:system_sched
                 # Skip empty or invalid process info lines
                 jump_to ${LABEL_system_sched_process_loop_continue}
             fi
-            
-            cpu_execute "${CPU_EQUAL_CMD}" ${VAR_system_sched_process_counter_ADDRESS} ${VAR_highest_priority_counter_ADDRESS}
-            jump_if ${LABEL_system_sched_process_loop_continue}
 
             cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_system_sched_cur_proc_info_ADDRESS} ${VAR_system_sched_process_status_column_ADDRESS}
             *VAR_system_sched_cur_status_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
