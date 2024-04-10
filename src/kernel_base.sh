@@ -573,12 +573,10 @@ FUNC:run_highest_priority
     *VAR_process_status_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
     if *VAR_process_status_ADDRESS=="terminated"
-        *GLOBAL_SCHED_COUNTER_ADDRESS="0"
         return "0"
     fi
 
     if *VAR_process_status_ADDRESS!="ready"
-        *GLOBAL_SCHED_COUNTER_ADDRESS="0"
         return "0"
     fi
 
@@ -588,6 +586,8 @@ FUNC:run_highest_priority
     cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_process_info_ADDRESS} ${VAR_system_sched_process_pid_column_ADDRESS}
     *GLOBAL_SCHED_PID_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 
+    return "0"
+    
 
 # Let's go through the loaded programs and execute them
 FUNC:system_sched
@@ -673,31 +673,10 @@ FUNC:system_sched
         fi
         jump_to ${LABEL_system_sched_main_loop}
     LABEL:system_sched_main_loop_end
+    return "0"
     # TODO_END
 
 # END: SCHEDULER
-
-# DEBUG restart all the processes.
-# To avoid programs reloading every time you can reset already loaded programs and assign custom priority
-# Fill free to extend it for your purpose:
-        # *VAR_system_sched_process_counter_ADDRESS="${GLOBAL_SCHED_PID_INFO_START_ADDRESS}"
-        # LABEL:system_sched_process_loop_debug
-        #     # restart_process_from_pid ${VAR_system_sched_process_counter_ADDRESS}
-        #     # or with new priority:
-        #     var system_sched_some_tmp_var
-        #     *VAR_system_sched_some_tmp_var_ADDRESS="5"
-        #     restart_process_from_pid ${VAR_system_sched_process_counter_ADDRESS} ${VAR_system_sched_some_tmp_var_ADDRESS}
-        # LABEL:system_sched_process_loop_debug_continue
-        #     if *VAR_system_sched_process_counter_ADDRESS=="${GLOBAL_SCHED_PID_INFO_END_ADDRESS}"
-        #         jump_to ${LABEL_system_sched_process_loop_debug_end}
-        #     fi
-            
-        #     *VAR_system_sched_process_counter_ADDRESS++
-        #     jump_to ${LABEL_system_sched_process_loop_debug}
-        # LABEL:system_sched_process_loop_debug_end
-# END DEBUG
-
-    return "0"
 
 ##########################################
 # KERNEL_END                             #
