@@ -582,7 +582,7 @@ FUNC:run_highest_priority
 
     *GLOBAL_CURRENT_PID_INFO_ADDRESS=*VAR_highest_priority_counter_ADDRESS
 
-    *GLOBAL_SCHED_COUNTER_ADDRESS="100"
+    *GLOBAL_SCHED_COUNTER_ADDRESS="10000000000"
     cpu_execute "${CPU_GET_COLUMN_CMD}" ${VAR_process_info_ADDRESS} ${VAR_system_sched_process_pid_column_ADDRESS}
     *GLOBAL_SCHED_PID_ADDRESS=*GLOBAL_OUTPUT_ADDRESS
 

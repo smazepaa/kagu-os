@@ -151,11 +151,7 @@ do
         eval $(read_from_address ${NEXT_CMD}) || exit_fatal "Incorrect instruction"
         dump_RAM_to_file
     else
-        if [ "${GLOBAL_SCHED_COUNTER_ADDRESS}" = "100" ]; then
-            write_to_address ${GLOBAL_SCHED_COUNTER_ADDRESS} ${SCHED_COUNTER}
-        else
-            write_to_address ${GLOBAL_SCHED_COUNTER_ADDRESS} "$(($SCHED_COUNTER - 1))"
-        fi
+        write_to_address ${GLOBAL_SCHED_COUNTER_ADDRESS} "$(($SCHED_COUNTER - 1))"
         v_jump_increment_counter
 
         OFFSET=$(get_process_mem_offset $(read_from_address ${GLOBAL_CURRENT_PID_INFO_ADDRESS}))
